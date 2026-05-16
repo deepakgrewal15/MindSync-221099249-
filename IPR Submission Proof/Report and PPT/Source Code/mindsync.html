@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindSync — AI Life OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f7;
+  --surface: rgba(255,255,255,0.72);
+  --surface-solid: #ffffff;
+  --surface2: rgba(255,255,255,0.45);
+  --border: rgba(180,190,220,0.35);
+  --border2: rgba(180,190,220,0.18);
+  --text: #1a1d2e;
+  --text2: #5a6080;
+  --text3: #9098b8;
+  --lavender: #8b7fe8;
+  --lavender2: #b3acf2;
+  --mint: #4ecfb0;
+  --mint2: #a8edd9;
+  --blue: #5b9cf6;
+  --blue2: #c0d9fd;
+  --rose: #f06292;
+  --amber: #f6a23c;
+  --grad1: linear-gradient(135deg, #e8e4ff 0%, #ddf4f0 50%, #dce9ff 100%);
+  --grad2: linear-gradient(135deg, #8b7fe8, #4ecfb0);
+  --grad3: linear-gradient(135deg, #5b9cf6, #8b7fe8);
+  --shadow: 0 8px 32px rgba(100,110,180,0.12);
+  --shadow2: 0 2px 12px rgba(100,110,180,0.08);
+  --radius: 20px;
+  --radius2: 14px;
+  --radius3: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s;
+}
+h1,h2,h3,h4 { font-family: 'Sora', sans-serif; }
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+/* ── GLOBAL BG BLOBS ── */
+.bg-blob { position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; z-index:0; }
+.blob1 { width:500px; height:500px; top:-100px; left:-150px; background:radial-gradient(circle, rgba(139,127,232,0.18) 0%, transparent 70%); }
+.blob2 { width:400px; height:400px; top:40%; right:-120px; background:radial-gradient(circle, rgba(78,207,176,0.15) 0%, transparent 70%); }
+.blob3 { width:350px; height:350px; bottom:-80px; left:30%; background:radial-gradient(circle, rgba(91,156,246,0.14) 0%, transparent 70%); }
+
+/* ── PAGES ── */
+.page { display:none; min-height:100vh; position:relative; z-index:1; }
+.page.active { display:flex; flex-direction:column; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── SIDEBAR LAYOUT ── */
+.app-layout { display:flex; min-height:100vh; }
+.sidebar {
+  width:260px; min-height:100vh; flex-shrink:0;
+  background: var(--surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--border);
+  padding: 28px 0;
+  position: fixed; left:0; top:0; bottom:0; z-index:100;
+  display: flex; flex-direction: column;
+  transition: transform 0.3s;
+}
+.sidebar-logo {
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border2);
+  display:flex; align-items:center; gap:10px;
+}
+.logo-icon {
+  width:36px; height:36px; border-radius:10px;
+  background: var(--grad2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+}
+.logo-text { font-family:'Sora',sans-serif; font-weight:700; font-size:18px; }
+.logo-text span { background:var(--grad2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+.sidebar-nav { flex:1; padding: 20px 12px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+.nav-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); padding: 12px 12px 6px; font-weight:600; }
+.nav-item {
+  display:flex; align-items:center; gap:12px;
+  padding: 11px 14px; border-radius:var(--radius3);
+  cursor:pointer; transition: all 0.2s;
+  font-size:14px; font-weight:500; color:var(--text2);
+  position:relative;
+}
+.nav-item:hover { background:rgba(139,127,232,0.08); color:var(--lavender); }
+.nav-item.active { background:rgba(139,127,232,0.12); color:var(--lavender); }
+.nav-item.active::before {
+  content:''; position:absolute; left:0; top:20%; bottom:20%;
+  width:3px; border-radius:2px; background:var(--lavender);
+}
+.nav-icon { font-size:18px; width:22px; text-align:center; }
+.nav-badge {
+  margin-left:auto; background:var(--lavender); color:#fff;
+  font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600;
+}
+
+.sidebar-bottom {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border2);
+}
+.user-card {
+  display:flex; align-items:center; gap:10px;
+  padding: 10px 12px; border-radius:var(--radius3);
+  cursor:pointer; transition:background 0.2s;
+}
+.user-card:hover { background:rgba(139,127,232,0.07); }
+.user-avatar {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--grad2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; color:#fff; font-weight:600;
+}
+.user-info { flex:1; }
+.user-name { font-size:13px; font-weight:600; }
+.user-plan { font-size:11px; color:var(--text3); }
+
+.main-content { margin-left:260px; flex:1; padding:32px 36px; min-height:100vh; }
+.page-header { margin-bottom:28px; }
+.page-title { font-size:26px; font-weight:700; margin-bottom:4px; }
+.page-subtitle { color:var(--text2); font-size:14px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow2);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card:hover { box-shadow: var(--shadow); }
+.card-sm { padding: 18px 20px; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.card-title { font-family:'Sora',sans-serif; font-size:15px; font-weight:600; }
+.card-action { font-size:12px; color:var(--lavender); cursor:pointer; font-weight:500; }
+.card-action:hover { text-decoration:underline; }
+
+/* ── GRID ── */
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+
+/* ── STAT CARD ── */
+.stat-card {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  position:relative; overflow:hidden;
+}
+.stat-card::after {
+  content:''; position:absolute; top:-30px; right:-30px;
+  width:100px; height:100px; border-radius:50%;
+  opacity:0.12;
+}
+.stat-card.lavender::after { background:var(--lavender); }
+.stat-card.mint::after { background:var(--mint); }
+.stat-card.blue::after { background:var(--blue); }
+.stat-card.rose::after { background:var(--rose); }
+.stat-icon { font-size:24px; margin-bottom:12px; }
+.stat-val { font-family:'Sora',sans-serif; font-size:28px; font-weight:700; margin-bottom:2px; }
+.stat-label { font-size:12px; color:var(--text2); }
+.stat-change { font-size:11px; margin-top:6px; }
+.stat-change.up { color:var(--mint); }
+.stat-change.down { color:var(--rose); }
+
+/* ── BUTTONS ── */
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 10px 20px; border-radius:var(--radius3);
+  font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500;
+  cursor:pointer; border:none; transition:all 0.2s;
+}
+.btn-primary {
+  background:var(--grad2); color:#fff;
+  box-shadow: 0 4px 15px rgba(139,127,232,0.35);
+}
+.btn-primary:hover { transform:translateY(-1px); box-shadow: 0 6px 20px rgba(139,127,232,0.45); }
+.btn-secondary {
+  background: rgba(139,127,232,0.1); color:var(--lavender);
+  border: 1px solid rgba(139,127,232,0.25);
+}
+.btn-secondary:hover { background: rgba(139,127,232,0.16); }
+.btn-ghost { background:transparent; color:var(--text2); }
+.btn-ghost:hover { background:rgba(0,0,0,0.04); }
+.btn-sm { padding: 7px 14px; font-size:12px; }
+.btn-lg { padding: 14px 28px; font-size:16px; border-radius:var(--radius2); }
+
+/* ── INPUT ── */
+input, textarea, select {
+  font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text);
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius3);
+  padding: 11px 14px;
+  outline:none; width:100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--lavender);
+  box-shadow: 0 0 0 3px rgba(139,127,232,0.12);
+  background: rgba(255,255,255,0.85);
+}
+textarea { resize:vertical; min-height:90px; }
+.input-group { margin-bottom:16px; }
+.input-label { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:6px; display:block; letter-spacing:0.3px; }
+
+/* ── PILL ── */
+.pill {
+  display:inline-flex; align-items:center; gap:5px;
+  padding: 4px 12px; border-radius:20px;
+  font-size:11px; font-weight:600; letter-spacing:0.3px;
+}
+.pill-lavender { background:rgba(139,127,232,0.12); color:var(--lavender); }
+.pill-mint { background:rgba(78,207,176,0.12); color:var(--mint); }
+.pill-blue { background:rgba(91,156,246,0.12); color:var(--blue); }
+.pill-rose { background:rgba(240,98,146,0.12); color:var(--rose); }
+.pill-amber { background:rgba(246,162,60,0.12); color:var(--amber); }
+
+/* ── PROGRESS BAR ── */
+.progress-bar { height:6px; background:rgba(139,127,232,0.1); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:3px; background:var(--grad2); transition:width 0.5s ease; }
+.progress-fill.mint { background:linear-gradient(90deg,var(--mint2),var(--mint)); }
+.progress-fill.blue { background:linear-gradient(90deg,var(--blue2),var(--blue)); }
+.progress-fill.rose { background:linear-gradient(90deg,#ffa0b8,var(--rose)); }
+.progress-fill.amber { background:linear-gradient(90deg,#fde0b0,var(--amber)); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:30px; right:30px; z-index:9999;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  padding: 14px 20px;
+  box-shadow: var(--shadow);
+  display:flex; align-items:center; gap:12px;
+  transform: translateY(100px); opacity:0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width:320px;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast-icon { font-size:20px; }
+.toast-text { font-size:13px; font-weight:500; }
+
+/* ══════════════════════════════════════════
+   LANDING PAGE
+══════════════════════════════════════════ */
+#page-landing {
+  background: var(--grad1);
+  min-height:100vh;
+}
+.landing-nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 22px 60px;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position:sticky; top:0; z-index:50;
+}
+.landing-logo { display:flex; align-items:center; gap:10px; }
+.landing-logo .logo-icon { width:38px; height:38px; }
+.landing-logo .logo-text { font-size:20px; }
+.landing-nav-links { display:flex; gap:6px; }
+.landing-nav-links .btn-ghost { color:var(--text2); }
+.hero {
+  max-width:1100px; margin:0 auto; padding:90px 40px 60px;
+  display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;
+}
+.hero-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(139,127,232,0.1); border:1px solid rgba(139,127,232,0.2);
+  border-radius:30px; padding:6px 16px; font-size:12px; font-weight:600;
+  color:var(--lavender); margin-bottom:22px;
+}
+.hero-badge::before { content:'✦'; }
+.hero h1 {
+  font-size:52px; font-weight:700; line-height:1.12;
+  margin-bottom:20px; letter-spacing:-1px;
+}
+.hero h1 .grad { background:var(--grad2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.hero p { font-size:17px; color:var(--text2); line-height:1.7; margin-bottom:36px; max-width:450px; }
+.hero-buttons { display:flex; gap:12px; flex-wrap:wrap; }
+.hero-visual { position:relative; }
+.hero-card-float {
+  background: var(--surface);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  padding:22px;
+  box-shadow: var(--shadow);
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.hero-card-float2 { animation-delay:1s; animation-duration:5s; }
+.mini-card {
+  position:absolute;
+  background: var(--surface);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:var(--radius2);
+  padding:12px 16px;
+  box-shadow:var(--shadow);
+  font-size:12px; font-weight:500;
+}
+.mini-card.top-right { top:-20px; right:-20px; animation:float 3.5s ease-in-out infinite 0.5s; }
+.mini-card.bottom-left { bottom:-20px; left:-20px; animation:float 4.5s ease-in-out infinite 1s; }
+.features-section { max-width:1100px; margin:0 auto; padding:60px 40px; }
+.features-title { text-align:center; font-size:36px; font-weight:700; margin-bottom:12px; }
+.features-sub { text-align:center; color:var(--text2); font-size:16px; margin-bottom:50px; }
+.features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.feature-card {
+  background:var(--surface); backdrop-filter:blur(20px);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:28px; transition:all 0.3s;
+}
+.feature-card:hover { transform:translateY(-4px); box-shadow:var(--shadow); }
+.feature-icon {
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; margin-bottom:16px;
+}
+.feature-icon.lav { background:rgba(139,127,232,0.12); }
+.feature-icon.mint { background:rgba(78,207,176,0.12); }
+.feature-icon.blue { background:rgba(91,156,246,0.12); }
+.feature-icon.rose { background:rgba(240,98,146,0.12); }
+.feature-icon.amber { background:rgba(246,162,60,0.12); }
+.feature-card h3 { font-size:16px; font-weight:600; margin-bottom:8px; }
+.feature-card p { font-size:13px; color:var(--text2); line-height:1.6; }
+.landing-footer { text-align:center; padding:40px; color:var(--text3); font-size:13px; border-top:1px solid var(--border2); }
+
+/* ══════════════════════════════════════════
+   AUTH PAGE
+══════════════════════════════════════════ */
+#page-auth {
+  background: var(--grad1);
+  align-items:center; justify-content:center; flex-direction:column;
+}
+.auth-card {
+  background:var(--surface); backdrop-filter:blur(24px);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:40px; width:100%; max-width:420px;
+  box-shadow:var(--shadow);
+}
+.auth-logo { display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:28px; }
+.auth-tabs { display:flex; background:rgba(139,127,232,0.08); border-radius:var(--radius3); padding:4px; margin-bottom:28px; }
+.auth-tab {
+  flex:1; text-align:center; padding:9px; font-size:13px; font-weight:600;
+  border-radius:8px; cursor:pointer; transition:all 0.2s; color:var(--text2);
+}
+.auth-tab.active { background:#fff; color:var(--lavender); box-shadow:var(--shadow2); }
+.auth-divider { text-align:center; color:var(--text3); font-size:12px; margin:16px 0; position:relative; }
+.auth-divider::before, .auth-divider::after {
+  content:''; position:absolute; top:50%; width:42%; height:1px;
+  background:var(--border);
+}
+.auth-divider::before { left:0; } .auth-divider::after { right:0; }
+.auth-footer { text-align:center; font-size:12px; color:var(--text3); margin-top:20px; }
+
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+.balance-score-ring {
+  position:relative; width:120px; height:120px;
+  margin:0 auto 16px;
+}
+.balance-score-ring svg { transform:rotate(-90deg); }
+.ring-bg { fill:none; stroke:rgba(139,127,232,0.1); stroke-width:8; }
+.ring-fill { fill:none; stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
+.ring-text {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.ring-val { font-family:'Sora',sans-serif; font-size:28px; font-weight:700; }
+.ring-label { font-size:11px; color:var(--text3); }
+.balance-factors { display:flex; flex-direction:column; gap:10px; }
+.balance-row { display:flex; align-items:center; gap:10px; }
+.balance-factor-label { font-size:12px; color:var(--text2); width:90px; flex-shrink:0; }
+.balance-factor-bar { flex:1; }
+.balance-factor-val { font-size:12px; font-weight:600; color:var(--text); width:30px; text-align:right; }
+
+.quick-action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.quick-action {
+  background:rgba(139,127,232,0.07); border:1px solid rgba(139,127,232,0.15);
+  border-radius:var(--radius2); padding:14px 16px;
+  cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:10px;
+}
+.quick-action:hover { background:rgba(139,127,232,0.13); transform:scale(1.02); }
+.quick-action-icon { font-size:20px; }
+.quick-action-text { font-size:13px; font-weight:500; }
+
+.task-item {
+  display:flex; align-items:center; gap:12px;
+  padding: 11px 0; border-bottom:1px solid var(--border2);
+}
+.task-item:last-child { border-bottom:none; padding-bottom:0; }
+.task-check {
+  width:18px; height:18px; border-radius:50%; border:2px solid var(--border);
+  cursor:pointer; flex-shrink:0; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center;
+}
+.task-check:hover { border-color:var(--lavender); }
+.task-check.done { border-color:var(--mint); background:var(--mint); }
+.task-check.done::after { content:'✓'; color:#fff; font-size:10px; }
+.task-text { flex:1; font-size:13px; }
+.task-text.done { text-decoration:line-through; color:var(--text3); }
+.task-time { font-size:11px; color:var(--text3); }
+
+.mood-mini-grid { display:flex; gap:8px; flex-wrap:wrap; }
+.mood-mini {
+  padding:8px 12px; border-radius:20px;
+  border:1.5px solid var(--border); cursor:pointer;
+  font-size:13px; transition:all 0.2s; display:flex; align-items:center; gap:5px;
+}
+.mood-mini:hover { border-color:var(--lavender); background:rgba(139,127,232,0.07); }
+.mood-mini.selected { border-color:var(--lavender); background:rgba(139,127,232,0.12); color:var(--lavender); }
+
+/* ══════════════════════════════════════════
+   AI PLANNER
+══════════════════════════════════════════ */
+.ai-chat-area {
+  display:flex; flex-direction:column; gap:16px;
+  max-height:420px; overflow-y:auto;
+  padding-right:4px;
+}
+.ai-chat-area::-webkit-scrollbar { width:4px; }
+.ai-chat-area::-webkit-scrollbar-thumb { background:rgba(139,127,232,0.2); border-radius:2px; }
+.chat-bubble {
+  display:flex; gap:10px; align-items:flex-start;
+}
+.chat-bubble.user { flex-direction:row-reverse; }
+.chat-avatar {
+  width:32px; height:32px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px;
+}
+.chat-avatar.ai { background:var(--grad2); color:#fff; }
+.chat-avatar.user { background:rgba(139,127,232,0.15); }
+.chat-msg {
+  background:rgba(255,255,255,0.75);
+  border:1px solid var(--border);
+  border-radius:16px; border-top-left-radius:4px;
+  padding:12px 16px; font-size:13px; line-height:1.6;
+  max-width:80%;
+}
+.chat-bubble.user .chat-msg {
+  background:rgba(139,127,232,0.12);
+  border-color:rgba(139,127,232,0.2);
+  border-radius:16px; border-top-right-radius:4px;
+}
+.chat-input-row { display:flex; gap:10px; margin-top:16px; }
+.chat-input-row input { flex:1; }
+.chat-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.chat-sug {
+  font-size:12px; padding:6px 12px; border-radius:20px;
+  background:rgba(139,127,232,0.08); border:1px solid rgba(139,127,232,0.18);
+  color:var(--lavender); cursor:pointer; transition:all 0.2s;
+}
+.chat-sug:hover { background:rgba(139,127,232,0.16); }
+.ai-typing { display:flex; gap:5px; align-items:center; padding:12px 16px; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--lavender); animation:bounce 1.2s ease-in-out infinite; }
+.dot:nth-child(2){animation-delay:0.2s} .dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+.schedule-block {
+  border-left:3px solid var(--lavender); padding:10px 14px;
+  background:rgba(139,127,232,0.05); border-radius:0 8px 8px 0;
+  margin:6px 0;
+}
+.schedule-time { font-size:11px; color:var(--lavender); font-weight:600; margin-bottom:2px; }
+.schedule-task { font-size:13px; font-weight:500; }
+.schedule-block.mint { border-color:var(--mint); background:rgba(78,207,176,0.05); }
+.schedule-block.mint .schedule-time { color:var(--mint); }
+.schedule-block.blue { border-color:var(--blue); background:rgba(91,156,246,0.05); }
+.schedule-block.blue .schedule-time { color:var(--blue); }
+
+/* ══════════════════════════════════════════
+   NOTES
+══════════════════════════════════════════ */
+.notes-sidebar { width:240px; flex-shrink:0; }
+.notes-layout { display:flex; gap:20px; }
+.notes-list { display:flex; flex-direction:column; gap:8px; }
+.note-item {
+  background:var(--surface); backdrop-filter:blur(20px);
+  border:1px solid var(--border); border-radius:var(--radius2);
+  padding:14px 16px; cursor:pointer; transition:all 0.2s;
+}
+.note-item:hover { border-color:var(--lavender); }
+.note-item.active { border-color:var(--lavender); background:rgba(139,127,232,0.07); }
+.note-item-title { font-size:13px; font-weight:600; margin-bottom:4px; }
+.note-item-preview { font-size:11px; color:var(--text3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.note-item-date { font-size:10px; color:var(--text3); margin-top:6px; }
+.note-editor { flex:1; }
+.note-editor-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.note-title-input {
+  font-family:'Sora',sans-serif; font-size:22px; font-weight:700;
+  border:none; background:transparent; outline:none; color:var(--text); width:100%;
+}
+.note-toolbar { display:flex; gap:6px; margin-bottom:12px; }
+.toolbar-btn {
+  width:30px; height:30px; border-radius:6px;
+  border:1px solid var(--border); background:var(--surface);
+  cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; color:var(--text2);
+}
+.toolbar-btn:hover { border-color:var(--lavender); color:var(--lavender); }
+.note-body {
+  min-height:300px; font-size:14px; line-height:1.8;
+  border:none; background:transparent; outline:none; color:var(--text); width:100%;
+  resize:none;
+}
+.ai-summary-box {
+  background:rgba(139,127,232,0.07); border:1px solid rgba(139,127,232,0.2);
+  border-radius:var(--radius2); padding:16px; margin-top:16px;
+}
+.ai-summary-title { font-size:12px; font-weight:600; color:var(--lavender); margin-bottom:8px; }
+.ai-summary-text { font-size:13px; color:var(--text2); line-height:1.6; }
+
+/* ══════════════════════════════════════════
+   MOOD TRACKER
+══════════════════════════════════════════ */
+.mood-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.mood-btn {
+  background:var(--surface); backdrop-filter:blur(20px);
+  border:2px solid var(--border); border-radius:var(--radius2);
+  padding:20px 16px; text-align:center; cursor:pointer; transition:all 0.2s;
+}
+.mood-btn:hover { transform:scale(1.03); box-shadow:var(--shadow); }
+.mood-btn.selected { border-color:var(--lavender); background:rgba(139,127,232,0.1); }
+.mood-emoji { font-size:32px; margin-bottom:8px; }
+.mood-name { font-size:13px; font-weight:600; }
+.mood-desc { font-size:11px; color:var(--text3); margin-top:3px; }
+.mood-history { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+.mood-entry {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:var(--radius3);
+  background:rgba(255,255,255,0.5); border:1px solid var(--border2);
+}
+.mood-entry-emoji { font-size:22px; }
+.mood-entry-info { flex:1; }
+.mood-entry-name { font-size:13px; font-weight:600; }
+.mood-entry-tip { font-size:11px; color:var(--text3); margin-top:2px; }
+.mood-entry-time { font-size:11px; color:var(--text3); }
+.mood-chart { display:flex; align-items:flex-end; gap:8px; height:80px; padding-top:10px; }
+.mood-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.mood-bar { width:100%; border-radius:4px 4px 0 0; transition:height 0.5s ease; }
+.mood-day { font-size:10px; color:var(--text3); }
+.ai-insight-box {
+  background:linear-gradient(135deg,rgba(139,127,232,0.1),rgba(78,207,176,0.1));
+  border:1px solid rgba(139,127,232,0.2); border-radius:var(--radius2); padding:20px;
+  margin-top:8px;
+}
+.ai-insight-header { display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; margin-bottom:10px; }
+.ai-insight-text { font-size:13px; color:var(--text2); line-height:1.7; }
+
+/* ══════════════════════════════════════════
+   GOAL TRACKER
+══════════════════════════════════════════ */
+.goal-card {
+  background:var(--surface); backdrop-filter:blur(20px);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:22px; transition:all 0.2s;
+}
+.goal-card:hover { box-shadow:var(--shadow); }
+.goal-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.goal-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.goal-info { flex:1; }
+.goal-title { font-size:15px; font-weight:600; }
+.goal-target { font-size:12px; color:var(--text3); margin-top:2px; }
+.goal-pct { font-family:'Sora',sans-serif; font-size:22px; font-weight:700; }
+.goal-streak { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--amber); font-weight:600; margin-top:12px; }
+.streak-dots { display:flex; gap:4px; margin-top:10px; }
+.streak-dot { width:10px; height:10px; border-radius:50%; background:rgba(139,127,232,0.1); }
+.streak-dot.done { background:var(--lavender); }
+.streak-dot.today { background:var(--mint); box-shadow:0 0 6px rgba(78,207,176,0.5); }
+.add-goal-form { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+
+/* ══════════════════════════════════════════
+   FOCUS MODE
+══════════════════════════════════════════ */
+#page-focus {
+  background:linear-gradient(135deg, #0f0f1a, #1a1428, #0d1f1c);
+  color:#fff;
+}
+#page-focus.active { display:flex; }
+.focus-sidebar { background:transparent; border-right:1px solid rgba(255,255,255,0.08); }
+.focus-sidebar .nav-item { color:rgba(255,255,255,0.5); }
+.focus-sidebar .nav-item:hover,.focus-sidebar .nav-item.active { color:var(--lavender2); background:rgba(139,127,232,0.1); }
+.focus-sidebar .logo-text span { -webkit-text-fill-color:var(--lavender2); }
+.focus-sidebar .user-name { color:rgba(255,255,255,0.8); }
+.focus-sidebar .user-plan { color:rgba(255,255,255,0.4); }
+.focus-sidebar .sidebar-logo { border-color:rgba(255,255,255,0.08); }
+.focus-sidebar .sidebar-bottom { border-color:rgba(255,255,255,0.08); }
+.focus-main {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:40px; text-align:center; min-height:100vh;
+  margin-left:260px;
+}
+.focus-orb {
+  width:240px; height:240px; border-radius:50%;
+  background:radial-gradient(circle, rgba(139,127,232,0.4) 0%, rgba(78,207,176,0.2) 50%, transparent 70%);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:40px; position:relative;
+  animation:pulse-orb 4s ease-in-out infinite;
+}
+@keyframes pulse-orb { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.05);opacity:1} }
+.focus-orb::before {
+  content:''; position:absolute; inset:-20px; border-radius:50%;
+  border:1px solid rgba(139,127,232,0.2);
+  animation:pulse-ring 4s ease-in-out infinite;
+}
+.focus-orb::after {
+  content:''; position:absolute; inset:-40px; border-radius:50%;
+  border:1px solid rgba(139,127,232,0.1);
+  animation:pulse-ring 4s ease-in-out infinite 0.5s;
+}
+@keyframes pulse-ring { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.03);opacity:0.6} }
+.focus-timer { font-family:'Sora',sans-serif; font-size:72px; font-weight:300; letter-spacing:-2px; color:#fff; }
+.focus-session { font-size:14px; color:rgba(255,255,255,0.5); margin-top:4px; }
+.focus-controls { display:flex; gap:16px; margin-top:40px; }
+.focus-btn {
+  width:52px; height:52px; border-radius:50%;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07);
+  color:#fff; font-size:20px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; backdrop-filter:blur(10px);
+}
+.focus-btn:hover { background:rgba(139,127,232,0.25); border-color:var(--lavender2); }
+.focus-btn.main { width:64px; height:64px; font-size:24px; background:var(--grad2); border:none; }
+.focus-quote {
+  font-size:15px; color:rgba(255,255,255,0.5); max-width:400px;
+  line-height:1.7; font-style:italic; margin-top:40px;
+}
+.focus-modes { display:flex; gap:10px; margin-top:30px; }
+.focus-mode-btn {
+  padding:8px 18px; border-radius:20px; font-size:12px; font-weight:600;
+  border:1px solid rgba(255,255,255,0.15); background:transparent;
+  color:rgba(255,255,255,0.5); cursor:pointer; transition:all 0.2s;
+}
+.focus-mode-btn:hover,.focus-mode-btn.active { border-color:var(--lavender2); color:var(--lavender2); background:rgba(139,127,232,0.1); }
+.focus-task-list { margin-top:30px; width:100%; max-width:400px; }
+.focus-task-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; border-radius:var(--radius3);
+  border:1px solid rgba(255,255,255,0.08);
+  margin-bottom:8px; font-size:13px; color:rgba(255,255,255,0.7);
+}
+.focus-task-item .task-check { border-color:rgba(255,255,255,0.2); }
+
+/* ══════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════ */
+.settings-section { margin-bottom:32px; }
+.settings-section-title { font-size:13px; font-weight:600; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:14px; }
+.setting-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-bottom:1px solid var(--border2);
+}
+.setting-row:last-child { border-bottom:none; }
+.setting-info h4 { font-size:14px; font-weight:500; margin-bottom:2px; }
+.setting-info p { font-size:12px; color:var(--text3); }
+.toggle {
+  width:44px; height:24px; background:rgba(139,127,232,0.15);
+  border-radius:12px; cursor:pointer; position:relative;
+  transition:background 0.2s; flex-shrink:0;
+}
+.toggle.on { background:var(--lavender); }
+.toggle::after {
+  content:''; position:absolute; top:3px; left:3px;
+  width:18px; height:18px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2);
+  transition:transform 0.2s;
+}
+.toggle.on::after { transform:translateX(20px); }
+.theme-options { display:flex; gap:10px; }
+.theme-opt {
+  width:36px; height:36px; border-radius:50%;
+  cursor:pointer; border:3px solid transparent; transition:border-color 0.2s;
+}
+.theme-opt.active { border-color:var(--lavender); }
+
+/* ══════════════════════════════════════════
+   MOBILE SIDEBAR TOGGLE
+══════════════════════════════════════════ */
+.mobile-toggle {
+  display:none; position:fixed; top:16px; left:16px; z-index:200;
+  width:40px; height:40px; border-radius:10px;
+  background:var(--surface); border:1px solid var(--border);
+  align-items:center; justify-content:center;
+  cursor:pointer; font-size:18px;
+}
+@media(max-width:768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .main-content { margin-left:0; padding:20px 16px 80px; }
+  .focus-main { margin-left:0; padding:20px; }
+  .grid2,.grid3,.grid4 { grid-template-columns:1fr; }
+  .features-grid { grid-template-columns:1fr; }
+  .hero { grid-template-columns:1fr; padding:60px 24px; }
+  .hero-visual { display:none; }
+  .landing-nav { padding:16px 24px; }
+  .mobile-toggle { display:flex; }
+  .notes-layout { flex-direction:column; }
+  .notes-sidebar { width:100%; }
+  .add-goal-form { grid-template-columns:1fr; }
+  .mood-grid { grid-template-columns:repeat(2,1fr); }
+}
+
+/* ══════════════════════════════════════════
+   MISC
+══════════════════════════════════════════ */
+.section-gap { height:24px; }
+.flex { display:flex; }
+.flex-center { display:flex; align-items:center; justify-content:center; }
+.gap8 { gap:8px; }
+.gap12 { gap:12px; }
+.mb8 { margin-bottom:8px; }
+.mb16 { margin-bottom:16px; }
+.mt8 { margin-top:8px; }
+.mt16 { margin-top:16px; }
+.text-sm { font-size:12px; }
+.text-muted { color:var(--text3); }
+.fw6 { font-weight:600; }
+.scrollable { overflow-y:auto; max-height:340px; }
+.scrollable::-webkit-scrollbar { width:4px; }
+.scrollable::-webkit-scrollbar-thumb { background:rgba(139,127,232,0.2); border-radius:2px; }
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(26,29,46,0.5);
+  backdrop-filter:blur(8px); z-index:500; align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface-solid); border:1px solid var(--border);
+  border-radius:var(--radius); padding:28px; max-width:440px; width:90%;
+  box-shadow:var(--shadow); animation:fadeIn 0.3s ease;
+}
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.modal-close { cursor:pointer; font-size:20px; color:var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="bg-blob blob1"></div>
+<div class="bg-blob blob2"></div>
+<div class="bg-blob blob3"></div>
+
+<!-- MOBILE TOGGLE -->
+<div class="mobile-toggle" id="mobileToggle">☰</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✨</span>
+  <span class="toast-text" id="toastText">Done!</span>
+</div>
+
+<!-- ADD GOAL MODAL -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="font-size:16px">Add New Goal</h3>
+      <span class="modal-close" onclick="closeModal('goalModal')">×</span>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Goal Name</label>
+      <input type="text" id="newGoalName" placeholder="e.g. Read 20 pages daily">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Category</label>
+      <select id="newGoalCat">
+        <option>📚 Study</option><option>💪 Fitness</option><option>💰 Finance</option>
+        <option>🌙 Sleep</option><option>🧘 Wellness</option><option>🎯 Habit</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Target (days/week)</label>
+      <input type="number" id="newGoalTarget" placeholder="7" min="1" max="7" value="7">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="addGoal()">✦ Add Goal</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  LANDING PAGE
+════════════════════════════════════════ -->
+<div id="page-landing" class="page active">
+  <nav class="landing-nav">
+    <div class="landing-logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-text"><span>MindSync</span></div>
+    </div>
+    <div class="landing-nav-links">
+      <button class="btn btn-ghost" onclick="navigate('auth')">Log In</button>
+      <button class="btn btn-primary" onclick="navigate('auth')">Get Started →</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-badge">AI-Powered Life OS · Now Available</div>
+      <h1>Your <span class="grad">Calm AI</span><br>Life Assistant</h1>
+      <p>MindSync understands your moods, organizes your goals, plans your days, and keeps you balanced — all in one beautiful, intelligent space.</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary btn-lg" onclick="navigate('auth')">Start for Free →</button>
+        <button class="btn btn-secondary btn-lg" onclick="navigate('auth')">See Demo</button>
+      </div>
+      <div style="margin-top:28px;display:flex;gap:20px;align-items:center">
+        <div style="display:flex;gap:-8px">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--grad2);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff">A</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#5b9cf6,#4ecfb0);border:2px solid #fff;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff">R</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f06292,#f6a23c);border:2px solid #fff;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff">K</div>
+        </div>
+        <span style="font-size:13px;color:var(--text2)"><strong style="color:var(--text)">12,000+</strong> students already syncing</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card-float">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">✦ Today's Life Balance</div>
+        <div class="balance-score-ring" style="width:90px;height:90px;margin-bottom:12px">
+          <svg width="90" height="90" viewBox="0 0 90 90"><circle class="ring-bg" cx="45" cy="45" r="37" /><circle class="ring-fill" cx="45" cy="45" r="37" stroke="url(#g1)" stroke-dasharray="232" stroke-dashoffset="58" /><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b7fe8"/><stop offset="100%" stop-color="#4ecfb0"/></linearGradient></defs></svg>
+          <div class="ring-text"><span class="ring-val" style="font-size:20px">75</span><span class="ring-label">/ 100</span></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="pill pill-mint">😌 Calm</span>
+          <span class="pill pill-lavender">📚 Focused</span>
+          <span class="pill pill-blue">✅ On track</span>
+        </div>
+      </div>
+      <div class="mini-card top-right">
+        <div style="font-size:11px;color:var(--text3)">🤖 AI suggests</div>
+        <div style="font-size:12px;font-weight:600;margin-top:4px">Take a 5-min break ☕</div>
+      </div>
+      <div class="mini-card bottom-left">
+        <div style="font-size:18px">🔥 14</div>
+        <div style="font-size:11px;color:var(--text3)">Day streak!</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-section">
+    <div class="features-title">Everything your mind needs</div>
+    <div class="features-sub">One platform. Six superpowers.</div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon lav">🤖</div><h3>AI Daily Planner</h3><p>Just tell the AI how you feel. It creates smart schedules, priorities, and break reminders tailored to your mood and energy.</p></div>
+      <div class="feature-card"><div class="feature-icon mint">💭</div><h3>Mood Tracker</h3><p>Log how you feel daily. The AI analyzes patterns and gives calming suggestions, focus tips, and personalized routines.</p></div>
+      <div class="feature-card"><div class="feature-icon blue">📝</div><h3>Smart Notes</h3><p>Capture ideas, study material, and thoughts. AI auto-summarizes, highlights key points, and creates revision cards.</p></div>
+      <div class="feature-card"><div class="feature-icon rose">🎯</div><h3>Goal Tracker</h3><p>Set goals and track streaks, progress, and weekly consistency. Stay motivated with AI-powered encouragement.</p></div>
+      <div class="feature-card"><div class="feature-icon amber">🎯</div><h3>Focus Mode</h3><p>Enter a distraction-free space with Pomodoro timer, calming visuals, and motivational quotes to supercharge deep work.</p></div>
+      <div class="feature-card"><div class="feature-icon lav">⚖️</div><h3>Life Balance Score</h3><p>Your personal wellness score — calculated daily from sleep, mood, productivity, and habits. Get tips to improve it.</p></div>
+    </div>
+    <div style="text-align:center;margin-top:40px">
+      <button class="btn btn-primary btn-lg" onclick="navigate('auth')">Start Your Journey →</button>
+    </div>
+  </div>
+
+  <div class="landing-footer">
+    <div style="font-size:20px;margin-bottom:8px">🧠</div>
+    MindSync — Your Calm AI Life Assistant &nbsp;·&nbsp; Made with ✦ for students everywhere<br>
+    <span style="margin-top:8px;display:block">© 2025 MindSync. All rights reserved.</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  AUTH PAGE
+════════════════════════════════════════ -->
+<div id="page-auth" class="page">
+  <div class="auth-card" style="margin:auto">
+    <div class="auth-logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-text"><span>MindSync</span></div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
+    </div>
+    <div id="login-form">
+      <div class="input-group"><label class="input-label">Email</label><input type="email" placeholder="you@example.com" id="loginEmail"></div>
+      <div class="input-group"><label class="input-label">Password</label><input type="password" placeholder="••••••••" id="loginPass"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doLogin()">Sign In →</button>
+      <div class="auth-divider">or</div>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center">🌐 Continue with Google</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="input-group"><label class="input-label">Your Name</label><input type="text" placeholder="Alex Chen" id="signupName"></div>
+      <div class="input-group"><label class="input-label">Email</label><input type="email" placeholder="you@example.com"></div>
+      <div class="input-group"><label class="input-label">Password</label><input type="password" placeholder="Create a strong password"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doLogin()">Create Account →</button>
+      <div class="auth-divider">or</div>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center">🌐 Continue with Google</button>
+    </div>
+    <div class="auth-footer">By signing in, you agree to our <a href="#" style="color:var(--lavender)">Terms</a> and <a href="#" style="color:var(--lavender)">Privacy Policy</a></div>
+    <div class="auth-footer" style="margin-top:8px"><a href="#" style="color:var(--lavender)" onclick="navigate('landing');return false">← Back to home</a></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  MAIN APP PAGES
+════════════════════════════════════════ -->
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🧠</div>
+        <div class="logo-text"><span>MindSync</span></div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes<span class="nav-badge">3</span></div>
+        <div class="nav-label">Wellness</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-label">Account</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="user-card">
+          <div class="user-avatar">A</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebarName">Alex Chen</div>
+            <div class="user-plan">Pro Plan ✦</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="page-title" id="dashGreeting">Good morning, Alex ☀️</div>
+            <div class="page-subtitle">Here's your life overview for today</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary btn-sm" onclick="navigate('planner')">🤖 Ask AI</button>
+            <button class="btn btn-primary btn-sm" onclick="navigate('focus')">🎯 Focus</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid4 mb16">
+        <div class="stat-card lavender"><div class="stat-icon">✅</div><div class="stat-val">8</div><div class="stat-label">Tasks Today</div><div class="stat-change up">↑ 3 done</div></div>
+        <div class="stat-card mint"><div class="stat-icon">🔥</div><div class="stat-val">14</div><div class="stat-label">Day Streak</div><div class="stat-change up">↑ New record!</div></div>
+        <div class="stat-card blue"><div class="stat-icon">⏱</div><div class="stat-val">4.2h</div><div class="stat-label">Focus Time</div><div class="stat-change up">↑ +0.5h today</div></div>
+        <div class="stat-card rose"><div class="stat-icon">💭</div><div class="stat-val">😌</div><div class="stat-label">Today's Mood</div><div class="stat-change" style="color:var(--text3)">Calm & focused</div></div>
+      </div>
+
+      <div class="grid2 mb16">
+        <!-- Life Balance Score -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚖️ Life Balance Score</span>
+            <span class="pill pill-mint">75 / 100</span>
+          </div>
+          <div class="balance-score-ring">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="ring-fill" cx="60" cy="60" r="50" stroke="url(#grad-ring)" stroke-dasharray="314" stroke-dashoffset="78"/>
+              <defs><linearGradient id="grad-ring" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b7fe8"/><stop offset="100%" stop-color="#4ecfb0"/></linearGradient></defs>
+            </svg>
+            <div class="ring-text"><span class="ring-val">75</span><span class="ring-label">Balance</span></div>
+          </div>
+          <div class="balance-factors">
+            <div class="balance-row"><span class="balance-factor-label">😴 Sleep</span><div class="balance-factor-bar"><div class="progress-bar"><div class="progress-fill blue" style="width:70%"></div></div></div><span class="balance-factor-val">70</span></div>
+            <div class="balance-row"><span class="balance-factor-label">⚡ Productivity</span><div class="balance-factor-bar"><div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div></div><span class="balance-factor-val">85</span></div>
+            <div class="balance-row"><span class="balance-factor-label">💭 Mood</span><div class="balance-factor-bar"><div class="progress-bar"><div class="progress-fill mint" style="width:80%"></div></div></div><span class="balance-factor-val">80</span></div>
+            <div class="balance-row"><span class="balance-factor-label">✅ Tasks</span><div class="balance-factor-bar"><div class="progress-bar"><div class="progress-fill amber" style="width:60%"></div></div></div><span class="balance-factor-val">60</span></div>
+            <div class="balance-row"><span class="balance-factor-label">🔥 Streak</span><div class="balance-factor-bar"><div class="progress-bar"><div class="progress-fill rose" style="width:90%"></div></div></div><span class="balance-factor-val">90</span></div>
+          </div>
+          <div style="margin-top:16px;background:rgba(78,207,176,0.08);border:1px solid rgba(78,207,176,0.2);border-radius:var(--radius3);padding:12px">
+            <div style="font-size:11px;font-weight:600;color:var(--mint);margin-bottom:4px">🤖 AI Tip</div>
+            <div style="font-size:12px;color:var(--text2)">Sleep earlier tonight (+2h) to boost your score to 82. You're almost at your weekly best!</div>
+          </div>
+        </div>
+
+        <!-- Today's Tasks -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 Today's Tasks</span>
+            <span class="card-action" onclick="navigate('planner')">Plan with AI →</span>
+          </div>
+          <div id="todayTasks">
+            <div class="task-item"><div class="task-check done" onclick="toggleTask(this)"></div><span class="task-text done">Morning meditation</span><span class="task-time">7:00</span></div>
+            <div class="task-item"><div class="task-check done" onclick="toggleTask(this)"></div><span class="task-text done">Review chapter 5 notes</span><span class="task-time">9:00</span></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><span class="task-text">Practice problems — Math</span><span class="task-time">11:00</span></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><span class="task-text">Read 20 pages of novel</span><span class="task-time">2:00 PM</span></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><span class="task-text">Evening walk 🚶</span><span class="task-time">6:00 PM</span></div>
+            <div class="task-item"><div class="task-check" onclick="toggleTask(this)"></div><span class="task-text">Journal + wind down</span><span class="task-time">9:30 PM</span></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:14px;width:100%;justify-content:center" onclick="addQuickTask()">+ Add Task</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- Mood Check-in -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">💭 How are you feeling?</span>
+            <span class="card-action" onclick="navigate('mood')">Full Tracker →</span>
+          </div>
+          <div class="mood-mini-grid" id="dashMoodGrid">
+            <div class="mood-mini selected" onclick="selectDashMood(this)">😌 Calm</div>
+            <div class="mood-mini" onclick="selectDashMood(this)">⚡ Productive</div>
+            <div class="mood-mini" onclick="selectDashMood(this)">😰 Stressed</div>
+            <div class="mood-mini" onclick="selectDashMood(this)">😴 Tired</div>
+            <div class="mood-mini" onclick="selectDashMood(this)">😊 Happy</div>
+            <div class="mood-mini" onclick="selectDashMood(this)">😟 Anxious</div>
+          </div>
+          <div id="moodFeedback" style="margin-top:14px;display:none;background:rgba(139,127,232,0.07);border:1px solid rgba(139,127,232,0.2);border-radius:var(--radius3);padding:12px;font-size:13px;color:var(--text2)"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚡ Quick Actions</span></div>
+          <div class="quick-action-grid">
+            <div class="quick-action" onclick="navigate('planner')"><span class="quick-action-icon">🤖</span><span class="quick-action-text">Plan my day</span></div>
+            <div class="quick-action" onclick="navigate('notes')"><span class="quick-action-icon">📝</span><span class="quick-action-text">New note</span></div>
+            <div class="quick-action" onclick="navigate('focus')"><span class="quick-action-icon">🎯</span><span class="quick-action-text">Focus session</span></div>
+            <div class="quick-action" onclick="navigate('goals')"><span class="quick-action-icon">🔥</span><span class="quick-action-text">Log habit</span></div>
+          </div>
+          <div style="margin-top:16px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">🔥 Active Goals</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>📚 Daily Reading</span><span class="fw6">80%</span></div><div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>💪 Exercise</span><span class="fw6">57%</span></div><div class="progress-bar"><div class="progress-fill mint" style="width:57%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>🌙 Sleep 8hrs</span><span class="fw6">70%</span></div><div class="progress-bar"><div class="progress-fill blue" style="width:70%"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- AI PLANNER -->
+<div id="page-planner" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="plannerSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item active" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar">A</div><div class="user-info"><div class="user-name" id="sidebarName2">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title">🤖 AI Daily Planner</div>
+        <div class="page-subtitle">Tell me how you feel — I'll plan the perfect day for you</div>
+      </div>
+      <div class="grid2">
+        <div class="card" style="display:flex;flex-direction:column;height:600px">
+          <div class="card-header"><span class="card-title">💬 Chat with AI</span><span class="pill pill-lavender">✦ AI Active</span></div>
+          <div class="chat-suggestions" id="chatSuggestions">
+            <span class="chat-sug" onclick="sendSuggestion(this)">📅 Plan my day</span>
+            <span class="chat-sug" onclick="sendSuggestion(this)">😫 I feel unmotivated</span>
+            <span class="chat-sug" onclick="sendSuggestion(this)">📚 Exams next week</span>
+            <span class="chat-sug" onclick="sendSuggestion(this)">😰 Too much work</span>
+            <span class="chat-sug" onclick="sendSuggestion(this)">🧘 Help me relax</span>
+          </div>
+          <div class="ai-chat-area" id="chatArea" style="flex:1">
+            <div class="chat-bubble">
+              <div class="chat-avatar ai">🤖</div>
+              <div class="chat-msg">Hey Alex! I'm your AI life assistant 🌟<br><br>Tell me how you're feeling or what's on your mind — I'll create a personalized plan, schedule, or give you exactly the support you need today.</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Type anything..." onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="btn btn-primary" onclick="sendChat()">→</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">📅 Today's AI Schedule</span><span class="pill pill-mint">Auto-generated</span></div>
+            <div id="aiSchedule">
+              <div class="schedule-block"><div class="schedule-time">7:00 – 7:30 AM</div><div class="schedule-task">🧘 Morning meditation & stretch</div></div>
+              <div class="schedule-block mint"><div class="schedule-time">8:00 – 10:00 AM</div><div class="schedule-task">📚 Deep work: Chapter 5 review</div></div>
+              <div class="schedule-block blue"><div class="schedule-time">10:15 – 10:30 AM</div><div class="schedule-task">☕ Break + walk</div></div>
+              <div class="schedule-block"><div class="schedule-time">10:30 – 12:30 PM</div><div class="schedule-task">✏️ Practice problems</div></div>
+              <div class="schedule-block mint"><div class="schedule-time">1:30 – 3:00 PM</div><div class="schedule-task">📖 Reading session (20 pages)</div></div>
+              <div class="schedule-block blue"><div class="schedule-time">6:00 – 7:00 PM</div><div class="schedule-task">🚶 Evening walk + fresh air</div></div>
+              <div class="schedule-block"><div class="schedule-time">9:00 – 9:30 PM</div><div class="schedule-task">📓 Journaling & wind down</div></div>
+            </div>
+          </div>
+          <div class="card card-sm">
+            <div class="card-header"><span class="card-title">⚡ Today's Focus Stats</span></div>
+            <div class="grid2" style="gap:12px">
+              <div style="text-align:center;padding:12px;background:rgba(139,127,232,0.07);border-radius:var(--radius3)"><div style="font-size:22px;font-weight:700;color:var(--lavender)">6</div><div style="font-size:11px;color:var(--text3)">Tasks planned</div></div>
+              <div style="text-align:center;padding:12px;background:rgba(78,207,176,0.07);border-radius:var(--radius3)"><div style="font-size:22px;font-weight:700;color:var(--mint)">4</div><div style="font-size:11px;color:var(--text3)">Break reminders</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div id="page-notes" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="notesSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item active" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar">A</div><div class="user-info"><div class="user-name">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div class="page-title">📝 Smart Notes</div><div class="page-subtitle">Your AI-powered knowledge base</div></div>
+          <button class="btn btn-primary" onclick="newNote()">+ New Note</button>
+        </div>
+      </div>
+      <div class="notes-layout">
+        <div class="notes-sidebar">
+          <input type="text" placeholder="🔍 Search notes..." style="margin-bottom:12px">
+          <div class="notes-list" id="notesList">
+            <div class="note-item active" onclick="selectNote(0)">
+              <div style="display:flex;gap:6px;margin-bottom:6px"><span class="pill pill-lavender">Study</span></div>
+              <div class="note-item-title">Physics — Waves & Optics</div>
+              <div class="note-item-preview">Wave interference, diffraction grating, refraction...</div>
+              <div class="note-item-date">Today, 10:32 AM</div>
+            </div>
+            <div class="note-item" onclick="selectNote(1)">
+              <div style="display:flex;gap:6px;margin-bottom:6px"><span class="pill pill-mint">Ideas</span></div>
+              <div class="note-item-title">Startup ideas brainstorm</div>
+              <div class="note-item-preview">AI calendar that reads your mood, productivity app for...</div>
+              <div class="note-item-date">Yesterday, 2:15 PM</div>
+            </div>
+            <div class="note-item" onclick="selectNote(2)">
+              <div style="display:flex;gap:6px;margin-bottom:6px"><span class="pill pill-blue">Goals</span></div>
+              <div class="note-item-title">2025 Life Goals</div>
+              <div class="note-item-preview">Read 24 books, learn Spanish, build a project...</div>
+              <div class="note-item-date">3 days ago</div>
+            </div>
+          </div>
+        </div>
+        <div class="note-editor card" style="flex:1">
+          <div class="note-editor-header">
+            <input class="note-title-input" id="noteTitle" value="Physics — Waves & Optics" placeholder="Note title...">
+            <button class="btn btn-secondary btn-sm" onclick="summarizeNote()">🤖 AI Summarize</button>
+          </div>
+          <div class="note-toolbar">
+            <button class="toolbar-btn" title="Bold"><b>B</b></button>
+            <button class="toolbar-btn" title="Italic"><i>I</i></button>
+            <button class="toolbar-btn" title="Highlight">✦</button>
+            <button class="toolbar-btn" title="List">≡</button>
+            <button class="toolbar-btn" title="Heading">H</button>
+            <div style="flex:1"></div>
+            <span class="pill pill-mint" style="font-size:10px">Saved ✓</span>
+          </div>
+          <textarea class="note-body" id="noteBody">Wave interference occurs when two or more waves overlap and combine. 
+
+Key Concepts:
+• Constructive interference: waves add together (crest + crest)
+• Destructive interference: waves cancel out (crest + trough)
+• Path difference = nλ for constructive, (n+½)λ for destructive
+
+Young's Double Slit Experiment:
+- Two slits separated by distance d
+- Screen at distance L
+- Fringe spacing: y = λL/d
+
+Diffraction Grating:
+- Many slits, sharper maxima
+- d sin θ = nλ
+- Used in spectroscopes, CD/DVD discs
+
+Important formula: n = c/v (refractive index)
+Snell's Law: n₁ sin θ₁ = n₂ sin θ₂</textarea>
+          <div id="aiSummaryBox" class="ai-summary-box" style="display:none">
+            <div class="ai-summary-title">🤖 AI Summary</div>
+            <div class="ai-summary-text" id="aiSummaryText"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MOOD TRACKER -->
+<div id="page-mood" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="moodSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item active" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar">A</div><div class="user-info"><div class="user-name">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header"><div class="page-title">💭 Mood Tracker</div><div class="page-subtitle">Understand your emotional patterns with AI insights</div></div>
+      <div class="grid2 mb16">
+        <div class="card">
+          <div class="card-header"><span class="card-title">How are you feeling right now?</span></div>
+          <div class="mood-grid" id="moodGrid">
+            <div class="mood-btn selected" onclick="selectMood(this,'calm')"><div class="mood-emoji">😌</div><div class="mood-name">Calm</div><div class="mood-desc">Peaceful & relaxed</div></div>
+            <div class="mood-btn" onclick="selectMood(this,'productive')"><div class="mood-emoji">⚡</div><div class="mood-name">Productive</div><div class="mood-desc">In the zone</div></div>
+            <div class="mood-btn" onclick="selectMood(this,'stressed')"><div class="mood-emoji">😰</div><div class="mood-name">Stressed</div><div class="mood-desc">Feeling pressure</div></div>
+            <div class="mood-btn" onclick="selectMood(this,'tired')"><div class="mood-emoji">😴</div><div class="mood-name">Tired</div><div class="mood-desc">Low energy</div></div>
+            <div class="mood-btn" onclick="selectMood(this,'happy')"><div class="mood-emoji">😊</div><div class="mood-name">Happy</div><div class="mood-desc">Feeling great!</div></div>
+            <div class="mood-btn" onclick="selectMood(this,'anxious')"><div class="mood-emoji">😟</div><div class="mood-name">Anxious</div><div class="mood-desc">Worried</div></div>
+          </div>
+          <div style="margin-top:16px">
+            <label class="input-label">Add a note (optional)</label>
+            <input type="text" placeholder="What's on your mind?" id="moodNote">
+          </div>
+          <button class="btn btn-primary" style="margin-top:12px;width:100%;justify-content:center" onclick="logMood()">Log Mood</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 This Week</span></div>
+          <div class="mood-chart" id="moodChart">
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:60%;background:rgba(139,127,232,0.6)"></div><div class="mood-day">Mon</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:40%;background:rgba(240,98,146,0.6)"></div><div class="mood-day">Tue</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:80%;background:rgba(78,207,176,0.6)"></div><div class="mood-day">Wed</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:50%;background:rgba(246,162,60,0.6)"></div><div class="mood-day">Thu</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:90%;background:rgba(91,156,246,0.6)"></div><div class="mood-day">Fri</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:70%;background:rgba(139,127,232,0.6)"></div><div class="mood-day">Sat</div></div>
+            <div class="mood-bar-wrap"><div class="mood-bar" style="height:75%;background:rgba(78,207,176,0.7)"></div><div class="mood-day">Today</div></div>
+          </div>
+          <div class="ai-insight-box" id="moodInsight">
+            <div class="ai-insight-header"><span>🤖</span> AI Mood Insight</div>
+            <div class="ai-insight-text">Your mood trend is improving this week! You've felt most productive mid-week. Try maintaining your Wednesday routine — it seems to work best for you. Consider a short walk before studying on stressed days.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📅 Mood History</span><span class="pill pill-lavender">Last 7 entries</span></div>
+        <div class="mood-history" id="moodHistory">
+          <div class="mood-entry"><span class="mood-entry-emoji">😌</span><div class="mood-entry-info"><div class="mood-entry-name">Calm</div><div class="mood-entry-tip">🤖 Keep it up! Try a 10-min meditation tonight.</div></div><span class="mood-entry-time">Today 9:00 AM</span></div>
+          <div class="mood-entry"><span class="mood-entry-emoji">⚡</span><div class="mood-entry-info"><div class="mood-entry-name">Productive</div><div class="mood-entry-tip">🤖 Great energy — use it for deep work sessions!</div></div><span class="mood-entry-time">Sat 2:00 PM</span></div>
+          <div class="mood-entry"><span class="mood-entry-emoji">😰</span><div class="mood-entry-info"><div class="mood-entry-name">Stressed</div><div class="mood-entry-tip">🤖 Take a 5-min breathing break, break tasks smaller.</div></div><span class="mood-entry-time">Fri 11:00 AM</span></div>
+          <div class="mood-entry"><span class="mood-entry-emoji">😊</span><div class="mood-entry-info"><div class="mood-entry-name">Happy</div><div class="mood-entry-tip">🤖 Wonderful! Your positivity boosts your productivity by 23%.</div></div><span class="mood-entry-time">Thu 7:00 PM</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- GOALS -->
+<div id="page-goals" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="goalsSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item active" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar">A</div><div class="user-info"><div class="user-name">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div class="page-title">🎯 Goal Tracker</div><div class="page-subtitle">Build habits, track streaks, achieve your dreams</div></div>
+          <button class="btn btn-primary" onclick="document.getElementById('goalModal').classList.add('open')">+ New Goal</button>
+        </div>
+      </div>
+      <div class="grid4 mb16">
+        <div class="stat-card lavender"><div class="stat-icon">🎯</div><div class="stat-val" id="totalGoals">4</div><div class="stat-label">Active Goals</div></div>
+        <div class="stat-card mint"><div class="stat-icon">🔥</div><div class="stat-val">14</div><div class="stat-label">Best Streak</div></div>
+        <div class="stat-card blue"><div class="stat-icon">✅</div><div class="stat-val">82%</div><div class="stat-label">Avg Completion</div></div>
+        <div class="stat-card rose"><div class="stat-icon">🏆</div><div class="stat-val">3</div><div class="stat-label">Goals Achieved</div></div>
+      </div>
+      <div class="grid2" id="goalsGrid">
+        <div class="goal-card">
+          <div class="goal-header">
+            <div class="goal-icon" style="background:rgba(139,127,232,0.12)">📚</div>
+            <div class="goal-info"><div class="goal-title">Daily Reading</div><div class="goal-target">20 pages/day · 7x per week</div></div>
+            <div class="goal-pct" style="color:var(--lavender)">80%</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+          <div class="goal-streak">🔥 12 day streak!</div>
+          <div class="streak-dots">
+            <div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot today"></div><div class="streak-dot"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="logHabit(this,'Reading')">✓ Log Today</button>
+        </div>
+        <div class="goal-card">
+          <div class="goal-header">
+            <div class="goal-icon" style="background:rgba(78,207,176,0.12)">💪</div>
+            <div class="goal-info"><div class="goal-title">Exercise</div><div class="goal-target">30 min · 5x per week</div></div>
+            <div class="goal-pct" style="color:var(--mint)">57%</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill mint" style="width:57%"></div></div>
+          <div class="goal-streak">🔥 4 day streak</div>
+          <div class="streak-dots">
+            <div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot today"></div><div class="streak-dot"></div><div class="streak-dot"></div><div class="streak-dot"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="logHabit(this,'Exercise')">✓ Log Today</button>
+        </div>
+        <div class="goal-card">
+          <div class="goal-header">
+            <div class="goal-icon" style="background:rgba(91,156,246,0.12)">🌙</div>
+            <div class="goal-info"><div class="goal-title">Sleep 8 Hours</div><div class="goal-target">Sleep by 11 PM · 7x/week</div></div>
+            <div class="goal-pct" style="color:var(--blue)">71%</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill blue" style="width:71%"></div></div>
+          <div class="goal-streak">🔥 7 day streak</div>
+          <div class="streak-dots">
+            <div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot today"></div><div class="streak-dot"></div><div class="streak-dot"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="logHabit(this,'Sleep')">✓ Log Today</button>
+        </div>
+        <div class="goal-card">
+          <div class="goal-header">
+            <div class="goal-icon" style="background:rgba(246,162,60,0.12)">💰</div>
+            <div class="goal-info"><div class="goal-title">Save Money</div><div class="goal-target">₹500/week savings</div></div>
+            <div class="goal-pct" style="color:var(--amber)">90%</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill amber" style="width:90%"></div></div>
+          <div class="goal-streak">🔥 14 day streak!</div>
+          <div class="streak-dots">
+            <div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot done"></div><div class="streak-dot today"></div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="logHabit(this,'Savings')">✓ Log Today</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- FOCUS MODE -->
+<div id="page-focus" class="page">
+  <div class="app-layout">
+    <aside class="sidebar focus-sidebar" id="focusSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item active" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar" style="background:rgba(139,127,232,0.2)">A</div><div class="user-info"><div class="user-name" style="color:#fff">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <div class="focus-main">
+      <div style="display:flex;gap:10px;margin-bottom:20px" class="focus-modes">
+        <button class="focus-mode-btn active" onclick="setFocusMode(this,25)">🍅 Pomodoro (25m)</button>
+        <button class="focus-mode-btn" onclick="setFocusMode(this,50)">⚡ Deep Work (50m)</button>
+        <button class="focus-mode-btn" onclick="setFocusMode(this,5)">☕ Short Break (5m)</button>
+      </div>
+      <div class="focus-orb">
+        <div class="focus-timer" id="focusTimer">25:00</div>
+      </div>
+      <div class="focus-session" id="focusSessionLabel">Session 1 of 4 · Pomodoro</div>
+      <div class="focus-controls">
+        <button class="focus-btn" onclick="resetTimer()" title="Reset">↺</button>
+        <button class="focus-btn main" id="focusPlayBtn" onclick="toggleTimer()">▶</button>
+        <button class="focus-btn" onclick="skipTimer()" title="Skip">⏭</button>
+      </div>
+      <div class="focus-quote" id="focusQuote">"The secret of getting ahead is getting started." — Mark Twain</div>
+      <div class="focus-task-list">
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;text-align:left">📋 Focus tasks</div>
+        <div class="focus-task-item"><div class="task-check" onclick="toggleTask(this)" style="border-color:rgba(255,255,255,0.2)"></div><span>Practice problems — Math</span></div>
+        <div class="focus-task-item"><div class="task-check" onclick="toggleTask(this)" style="border-color:rgba(255,255,255,0.2)"></div><span>Read 20 pages of novel</span></div>
+        <div class="focus-task-item"><div class="task-check" onclick="toggleTask(this)" style="border-color:rgba(255,255,255,0.2)"></div><span>Review physics notes</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="app-layout">
+    <aside class="sidebar" id="settingsSidebar">
+      <div class="sidebar-logo"><div class="logo-icon">🧠</div><div class="logo-text"><span>MindSync</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span>Dashboard</div>
+        <div class="nav-item" onclick="navigate('planner')"><span class="nav-icon">🤖</span>AI Planner</div>
+        <div class="nav-item" onclick="navigate('notes')"><span class="nav-icon">📝</span>Notes</div>
+        <div class="nav-item" onclick="navigate('mood')"><span class="nav-icon">💭</span>Mood Tracker</div>
+        <div class="nav-item" onclick="navigate('goals')"><span class="nav-icon">🎯</span>Goals</div>
+        <div class="nav-item" onclick="navigate('focus')"><span class="nav-icon">🎯</span>Focus Mode</div>
+        <div class="nav-item active" onclick="navigate('settings')"><span class="nav-icon">⚙</span>Settings</div>
+      </nav>
+      <div class="sidebar-bottom"><div class="user-card"><div class="user-avatar">A</div><div class="user-info"><div class="user-name">Alex Chen</div><div class="user-plan">Pro Plan ✦</div></div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="page-header"><div class="page-title">⚙ Settings</div><div class="page-subtitle">Customize your MindSync experience</div></div>
+      <div class="grid2">
+        <div>
+          <div class="card mb16">
+            <div class="settings-section-title">Profile</div>
+            <div class="input-group"><label class="input-label">Display Name</label><input type="text" value="Alex Chen" id="profileName"></div>
+            <div class="input-group"><label class="input-label">Email</label><input type="email" value="alex@example.com"></div>
+            <div class="input-group"><label class="input-label">Daily Goal Hours</label><input type="number" value="6" min="1" max="16"></div>
+            <button class="btn btn-primary btn-sm" onclick="saveName()">Save Changes</button>
+          </div>
+          <div class="card">
+            <div class="settings-section-title">Notifications</div>
+            <div class="setting-row"><div class="setting-info"><h4>Daily Check-in Reminder</h4><p>Remind me to log mood every morning</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Focus Break Alerts</h4><p>Notify when focus sessions end</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Goal Reminders</h4><p>Daily habit reminders at 8 PM</p></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>AI Weekly Insights</h4><p>Get your weekly life balance report</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card mb16">
+            <div class="settings-section-title">Appearance</div>
+            <div class="setting-row"><div class="setting-info"><h4>Theme</h4><p>Choose your interface theme</p></div>
+            <div class="theme-options">
+              <div class="theme-opt active" style="background:linear-gradient(135deg,#f0f2f7,#e8e4ff)" onclick="setTheme('light',this)" title="Light"></div>
+              <div class="theme-opt" style="background:linear-gradient(135deg,#1a1d2e,#0d1f1c)" onclick="setTheme('dark',this)" title="Dark"></div>
+              <div class="theme-opt" style="background:linear-gradient(135deg,#8b7fe8,#4ecfb0)" onclick="setTheme('lavender',this)" title="Lavender"></div>
+            </div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Compact Mode</h4><p>Smaller cards and tighter spacing</p></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Animations</h4><p>Enable smooth transitions</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="card mb16">
+            <div class="settings-section-title">AI Preferences</div>
+            <div class="setting-row"><div class="setting-info"><h4>AI Suggestions</h4><p>Show personalized tips and insights</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Smart Scheduling</h4><p>AI auto-adjusts schedule based on mood</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Mood-based Themes</h4><p>Adjust colors based on your mood</p></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="card">
+            <div class="settings-section-title">Data & Privacy</div>
+            <div class="setting-row"><div class="setting-info"><h4>Cloud Sync</h4><p>Sync data across all your devices</p></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="setting-row"><div class="setting-info"><h4>Usage Analytics</h4><p>Help improve MindSync (anonymous)</p></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn btn-secondary btn-sm">Export Data</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--rose)">Delete Account</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+// ── NAVIGATION ──
+const pages = ['landing','auth','dashboard','planner','notes','mood','goals','focus','settings'];
+function navigate(to) {
+  pages.forEach(p => {
+    const el = document.getElementById('page-'+p);
+    if(el) el.classList.remove('active');
+  });
+  const target = document.getElementById('page-'+to);
+  if(target) target.classList.add('active');
+  if(to==='focus') startFocusAmbience();
+  closeSidebar();
+  window.scrollTo(0,0);
+}
+
+// ── MOBILE SIDEBAR ──
+document.getElementById('mobileToggle').addEventListener('click', () => {
+  const activePage = document.querySelector('.page.active');
+  if(!activePage) return;
+  const sidebar = activePage.querySelector('.sidebar');
+  if(sidebar) sidebar.classList.toggle('open');
+});
+function closeSidebar() {
+  document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('open'));
+}
+
+// ── AUTH ──
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('login-form').style.display = tab==='login' ? 'block':'none';
+  document.getElementById('signup-form').style.display = tab==='signup' ? 'block':'none';
+}
+function doLogin() {
+  const name = document.getElementById('signupName')?.value || 'Alex';
+  if(name) {
+    document.querySelectorAll('[id^=sidebarName]').forEach(el => el.textContent = name);
+    document.querySelectorAll('.user-avatar').forEach(el => el.textContent = name[0].toUpperCase());
+  }
+  setGreeting();
+  navigate('dashboard');
+  toast('✨', 'Welcome back! Your AI is ready.');
+}
+
+// ── GREETING ──
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  const name = document.getElementById('sidebarName')?.textContent || 'Alex';
+  const icons = { morning:'☀️', afternoon:'🌤️', evening:'🌙' };
+  const el = document.getElementById('dashGreeting');
+  if(el) el.textContent = `Good ${g}, ${name} ${icons[g]}`;
+}
+setGreeting();
+
+// ── TOAST ──
+function toast(icon, text, duration=3000) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastText').textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── MODAL ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── TASK TOGGLE ──
+function toggleTask(el) {
+  el.classList.toggle('done');
+  const text = el.nextElementSibling;
+  if(text && text.classList.contains('task-text')) text.classList.toggle('done');
+}
+
+// ── DASH MOOD ──
+const moodFeedbacks = {
+  'calm': '🌿 You\'re in a great headspace. This is perfect for deep work or creative thinking.',
+  'productive': '⚡ You\'re on fire! Plan your hardest tasks now while the energy lasts.',
+  'stressed': '🌬️ Take a breath. Try the 4-7-8 technique or a short walk. You\'ve got this!',
+  'tired': '😴 Low energy? Take a 20-min power nap or grab water. Light tasks first.',
+  'happy': '😊 Wonderful! Your positive energy is contagious — use it to connect with others.',
+  'anxious': '💙 It\'s okay to feel anxious. Break your task list into smaller steps. One thing at a time.'
+};
+function selectDashMood(el) {
+  document.querySelectorAll('#dashMoodGrid .mood-mini').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+  const mood = el.textContent.split(' ')[1]?.toLowerCase() || 'calm';
+  const fb = document.getElementById('moodFeedback');
+  fb.style.display = 'block';
+  fb.textContent = moodFeedbacks[mood] || '✨ Thank you for checking in!';
+  toast('💭', 'Mood noted! AI adjusted your recommendations.');
+}
+
+// ── MOOD TRACKER ──
+function selectMood(el, mood) {
+  document.querySelectorAll('#moodGrid .mood-btn').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function logMood() {
+  const selected = document.querySelector('#moodGrid .mood-btn.selected');
+  if(!selected) return toast('⚠️','Please select a mood first.');
+  const emoji = selected.querySelector('.mood-emoji').textContent;
+  const name = selected.querySelector('.mood-name').textContent;
+  const tips = {
+    Calm:'Try a 10-min meditation tonight to keep this going.',
+    Productive:'Excellent energy! Schedule your hardest tasks now.',
+    Stressed:'5-min box breathing: inhale 4s, hold 4s, exhale 4s.',
+    Tired:'20-min power nap + water. Light tasks before deep work.',
+    Happy:'Positive mood boosted — reach out to someone you care about!',
+    Anxious:'Break everything into 3 tiny steps. You\'re not alone. 💙'
+  };
+  const list = document.getElementById('moodHistory');
+  const div = document.createElement('div');
+  div.className = 'mood-entry';
+  div.innerHTML = `<span class="mood-entry-emoji">${emoji}</span><div class="mood-entry-info"><div class="mood-entry-name">${name}</div><div class="mood-entry-tip">🤖 ${tips[name]||'Keep taking care of yourself!'}</div></div><span class="mood-entry-time">Just now</span>`;
+  list.insertBefore(div, list.firstChild);
+  toast('💭', `Mood logged: ${name}! AI insight updated.`);
+}
+
+// ── AI CHAT ──
+const aiResponses = {
+  default: [
+    "I've analyzed your current situation and created a personalized plan below! Remember to take 10-minute breaks every 90 minutes. 🌿",
+    "Based on your mood and goals, here's what I recommend for today. You're doing amazing — keep it up! ✨",
+    "Great question! I've checked your schedule and mood history. Here's a balanced plan to help you thrive today."
+  ],
+  stressed: {
+    msg: "I can feel the pressure you're under. Let's break this down into manageable chunks. First, breathe. 🌬️",
+    schedule: [{color:'',time:'Now – 5 min',task:'🌬️ Box breathing: 4-4-4-4'},{color:'mint',time:'5 – 35 min',task:'✏️ Identify your top 3 urgent tasks only'},{color:'blue',time:'35 – 50 min',task:'☕ 15-min reward break'},{color:'',time:'50 min – 2h',task:'📚 Tackle task #1 in deep focus'}]
+  },
+  unmotivated: {
+    msg: "Feeling unmotivated is completely normal. Let's start with just 2 minutes — that's all I ask. Once you start, momentum builds! 🚀",
+    schedule: [{color:'',time:'Right now',task:'🎵 Play your favourite music'},{color:'mint',time:'2 min',task:'⚡ Start the easiest task (2-minute rule)'},{color:'blue',time:'20 min',task:'✅ Complete one full task'},{color:'',time:'After',task:'🎉 Reward yourself — you started!'}]
+  },
+  exam: {
+    msg: "Exam mode activated! I've built you an intensive but sustainable study plan. Consistency beats cramming every time. 📚",
+    schedule: [{color:'',time:'8 – 10 AM',task:'📚 Topic 1: Deep review + notes'},{color:'mint',time:'10 – 10:15',task:'☕ Short break + hydrate'},{color:'',time:'10:15 – 12',task:'📝 Practice questions'},{color:'blue',time:'12 – 1 PM',task:'🍱 Lunch + complete rest'},{color:'',time:'1 – 3 PM',task:'📚 Topic 2: New material'},{color:'mint',time:'3 – 3:15',task:'🚶 Walk break'},{color:'',time:'3:15 – 5 PM',task:'🔄 Review + flashcards'},{color:'blue',time:'9:30 PM',task:'🌙 Sleep on time — your brain consolidates overnight!'}]
+  },
+  relax: {
+    msg: "You deserve rest just as much as productivity. Here's a calming evening plan to help you recharge. 🌿",
+    schedule: [{color:'mint',time:'Now',task:'🧘 5-min breathing exercise'},{color:'',time:'30 min',task:'📖 Light reading (not study)'},{color:'blue',time:'1 hour',task:'🚿 Warm shower'},{color:'',time:'Evening',task:'📓 Journaling — 3 things you\'re grateful for'},{color:'mint',time:'10 PM',task:'🌙 Screen-free wind down'}]
+  }
+};
+function getAIResponse(msg) {
+  const lower = msg.toLowerCase();
+  if(lower.includes('stress') || lower.includes('too much') || lower.includes('overwhelm')) return aiResponses.stressed;
+  if(lower.includes('unmotivat') || lower.includes('lazy') || lower.includes('can\'t')) return aiResponses.unmotivated;
+  if(lower.includes('exam') || lower.includes('test') || lower.includes('study')) return aiResponses.exam;
+  if(lower.includes('relax') || lower.includes('calm') || lower.includes('rest') || lower.includes('tired')) return aiResponses.relax;
+  return null;
+}
+function sendSuggestion(el) {
+  document.getElementById('chatInput').value = el.textContent.trim();
+  sendChat();
+}
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  appendChat('user', msg);
+  // Show typing
+  const typingId = 'typing-'+Date.now();
+  const chatArea = document.getElementById('chatArea');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'chat-bubble'; typingDiv.id = typingId;
+  typingDiv.innerHTML = `<div class="chat-avatar ai">🤖</div><div class="chat-msg ai-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  chatArea.appendChild(typingDiv);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        system:`You are MindSync AI, a calm, emotionally intelligent life assistant for students and young people. 
+You help users with scheduling, mood management, motivation, study plans, and life balance. 
+Be warm, concise, and supportive. Use emojis sparingly. 
+When creating schedules, format them clearly with times.
+Keep responses under 200 words. Always end with an encouraging note.`,
+        messages:[{role:"user", content:msg}]
+      })
+    });
+    const data = await response.json();
+    document.getElementById(typingId)?.remove();
+    const text = data.content?.map(b => b.text||'').join('') || fallbackResponse(msg);
+    appendChat('ai', text);
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    const fallback = getAIResponse(msg);
+    if(fallback) {
+      appendChat('ai', fallback.msg);
+      updateSchedule(fallback.schedule);
+    } else {
+      const r = aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
+      appendChat('ai', r);
+    }
+  }
+  document.getElementById('chatSuggestions').style.display='none';
+}
+function fallbackResponse(msg) {
+  const r = getAIResponse(msg);
+  if(r) { updateSchedule(r.schedule); return r.msg; }
+  return aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
+}
+function appendChat(role, text) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble' + (role==='user'?' user':'');
+  div.innerHTML = `<div class="chat-avatar ${role}">${role==='ai'?'🤖':'👤'}</div><div class="chat-msg">${text.replace(/\n/g,'<br>')}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function updateSchedule(blocks) {
+  if(!blocks) return;
+  const colors = ['','mint','blue'];
+  document.getElementById('aiSchedule').innerHTML = blocks.map(b =>
+    `<div class="schedule-block ${b.color}"><div class="schedule-time">${b.time}</div><div class="schedule-task">${b.task}</div></div>`
+  ).join('');
+  toast('📅','AI updated your schedule!');
+}
+
+// ── NOTES ──
+const notesData = [
+  { title:'Physics — Waves & Optics', tag:'Study', tagClass:'lavender',
+    body:`Wave interference occurs when two or more waves overlap and combine. 
+
+Key Concepts:
+• Constructive interference: waves add together (crest + crest)
+• Destructive interference: waves cancel out (crest + trough)
+• Path difference = nλ for constructive, (n+½)λ for destructive
+
+Young's Double Slit Experiment:
+- Two slits separated by distance d
+- Screen at distance L
+- Fringe spacing: y = λL/d
+
+Diffraction Grating:
+- Many slits, sharper maxima
+- d sin θ = nλ
+- Used in spectroscopes, CD/DVD discs
+
+Important formula: n = c/v (refractive index)
+Snell's Law: n₁ sin θ₁ = n₂ sin θ₂`},
+  { title:'Startup ideas brainstorm', tag:'Ideas', tagClass:'mint',
+    body:`1. AI calendar that reads your mood and schedules tasks accordingly
+2. Productivity app that adapts to student sleep cycles
+3. Group study room finder using geolocation
+4. AI flashcard generator from lecture recordings
+5. Peer accountability app with gentle nudges
+6. Smart noise machine that adapts to focus levels` },
+  { title:'2025 Life Goals', tag:'Goals', tagClass:'blue',
+    body:`Reading: 24 books this year (2 per month)
+Languages: Learn conversational Spanish (Duolingo + tutor)
+Fitness: Run 5K by March, gym 3x/week
+Projects: Build and launch one side project
+Finance: Save ₹50,000 by December
+Mental: Meditate 10 min every morning
+Social: Call family every Sunday` }
+];
+function selectNote(idx) {
+  document.querySelectorAll('.note-item').forEach((n,i) => n.classList.toggle('active', i===idx));
+  document.getElementById('noteTitle').value = notesData[idx].title;
+  document.getElementById('noteBody').value = notesData[idx].body;
+  document.getElementById('aiSummaryBox').style.display = 'none';
+}
+function newNote() {
+  const title = prompt('Note title:','New Note');
+  if(!title) return;
+  notesData.unshift({title, tag:'Note', tagClass:'lavender', body:''});
+  const list = document.getElementById('notesList');
+  const div = document.createElement('div');
+  div.className = 'note-item active';
+  div.innerHTML = `<div style="display:flex;gap:6px;margin-bottom:6px"><span class="pill pill-lavender">Note</span></div><div class="note-item-title">${title}</div><div class="note-item-preview">Empty note</div><div class="note-item-date">Just now</div>`;
+  div.onclick = () => selectNote(0);
+  list.insertBefore(div, list.firstChild);
+  document.querySelectorAll('.note-item').forEach((n,i) => n.classList.toggle('active', i===0));
+  document.getElementById('noteTitle').value = title;
+  document.getElementById('noteBody').value = '';
+  document.getElementById('aiSummaryBox').style.display='none';
+  toast('📝','New note created!');
+}
+async function summarizeNote() {
+  const content = document.getElementById('noteBody').value;
+  if(!content.trim()) return toast('⚠️','Write something first!');
+  const box = document.getElementById('aiSummaryBox');
+  const textEl = document.getElementById('aiSummaryText');
+  box.style.display='block';
+  textEl.textContent = '🤖 Summarizing...';
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        system:"You are a helpful study assistant. Summarize notes concisely with key points. Format: 3-4 bullet points, then 1-2 key formulas or concepts if applicable. Be concise and student-friendly.",
+        messages:[{role:"user",content:`Summarize these notes:\n\n${content}`}]
+      })
+    });
+    const data = await res.json();
+    textEl.innerHTML = (data.content?.[0]?.text||'Could not summarize.').replace(/\n/g,'<br>');
+  } catch(e) {
+    textEl.innerHTML = `• Wave interference: constructive (waves add) vs destructive (waves cancel)<br>• Young's double slit: y = λL/d<br>• Diffraction grating: d sin θ = nλ<br>• Snell's Law: n₁ sin θ₁ = n₂ sin θ₂<br><br><em>Key formula: n = c/v (refractive index)</em>`;
+  }
+  toast('🤖','Note summarized by AI!');
+}
+
+// ── GOALS ──
+function addGoal() {
+  const name = document.getElementById('newGoalName').value;
+  const cat = document.getElementById('newGoalCat').value;
+  if(!name) return toast('⚠️','Enter a goal name!');
+  const colors = {Study:'lavender',Fitness:'mint',Finance:'amber',Sleep:'blue',Wellness:'mint',Habit:'lavender'};
+  const catKey = cat.split(' ')[1];
+  const color = colors[catKey] || 'lavender';
+  const grid = document.getElementById('goalsGrid');
+  const div = document.createElement('div');
+  div.className = 'goal-card';
+  div.innerHTML = `<div class="goal-header"><div class="goal-icon" style="background:rgba(139,127,232,0.12)">${cat.split(' ')[0]}</div><div class="goal-info"><div class="goal-title">${name}</div><div class="goal-target">${cat} goal</div></div><div class="goal-pct" style="color:var(--${color})">0%</div></div><div class="progress-bar"><div class="progress-fill ${color==='lavender'?'':color}" style="width:0%"></div></div><div class="goal-streak">🔥 Just started!</div><div class="streak-dots">${'<div class="streak-dot"></div>'.repeat(7)}</div><button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="logHabit(this,'${name}')">✓ Log Today</button>`;
+  grid.appendChild(div);
+  closeModal('goalModal');
+  document.getElementById('newGoalName').value='';
+  const tc = document.getElementById('totalGoals');
+  if(tc) tc.textContent = parseInt(tc.textContent)+1;
+  toast('🎯',`Goal "${name}" added!`);
+}
+function logHabit(btn, name) {
+  const card = btn.closest('.goal-card');
+  const dots = card.querySelectorAll('.streak-dot');
+  let done = 0;
+  dots.forEach(d => { if(d.classList.contains('done')||d.classList.contains('today')) done++; });
+  if(done < dots.length) { dots[done].classList.add('today'); }
+  const pct = Math.min(100,Math.round((done+1)/dots.length*100));
+  card.querySelector('.goal-pct').textContent = pct+'%';
+  card.querySelector('.progress-fill').style.width = pct+'%';
+  btn.textContent = '✅ Logged!'; btn.disabled=true;
+  toast('🔥',`${name} habit logged! Keep the streak alive!`);
+}
+
+// ── FOCUS TIMER ──
+let focusSecs = 25*60, focusRunning=false, focusInterval=null, focusMode=25;
+const quotes = [
+  '"The secret of getting ahead is getting started." — Mark Twain',
+  '"Focus on being productive instead of busy." — Tim Ferriss',
+  '"Small steps every day lead to big results." — MindSync AI',
+  '"You don\'t have to be great to start, but you must start to be great." — Zig Ziglar',
+  '"One step at a time. One breath at a time." — MindSync AI'
+];
+function setFocusMode(btn, mins) {
+  document.querySelectorAll('.focus-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  focusMode = mins; focusSecs = mins*60; focusRunning=false;
+  clearInterval(focusInterval);
+  document.getElementById('focusPlayBtn').textContent='▶';
+  updateTimerDisplay();
+  const labels = {25:'Pomodoro', 50:'Deep Work', 5:'Short Break'};
+  document.getElementById('focusSessionLabel').textContent = `Session 1 of 4 · ${labels[mins]||'Custom'}`;
+  document.getElementById('focusQuote').textContent = quotes[Math.floor(Math.random()*quotes.length)];
+}
+function updateTimerDisplay() {
+  const m = String(Math.floor(focusSecs/60)).padStart(2,'0');
+  const s = String(focusSecs%60).padStart(2,'0');
+  document.getElementById('focusTimer').textContent = `${m}:${s}`;
+}
+function toggleTimer() {
+  focusRunning = !focusRunning;
+  document.getElementById('focusPlayBtn').textContent = focusRunning ? '⏸' : '▶';
+  if(focusRunning) {
+    focusInterval = setInterval(() => {
+      focusSecs--;
+      updateTimerDisplay();
+      if(focusSecs <= 0) {
+        clearInterval(focusInterval); focusRunning=false;
+        document.getElementById('focusPlayBtn').textContent='▶';
+        document.getElementById('focusQuote').textContent = '🎉 Session complete! Take a well-earned break.';
+        toast('🎉','Focus session complete! Great work!');
+      }
+    },1000);
+  } else clearInterval(focusInterval);
+}
+function resetTimer() { clearInterval(focusInterval); focusRunning=false; focusSecs=focusMode*60; updateTimerDisplay(); document.getElementById('focusPlayBtn').textContent='▶'; }
+function skipTimer() { clearInterval(focusInterval); focusRunning=false; focusSecs=0; updateTimerDisplay(); document.getElementById('focusQuote').textContent = '⏭ Session skipped. Ready for next one!'; }
+function startFocusAmbience() { document.getElementById('focusQuote').textContent = quotes[Math.floor(Math.random()*quotes.length)]; }
+
+// ── QUICK TASK ──
+function addQuickTask() {
+  const t = prompt('New task:','');
+  if(!t) return;
+  const list = document.getElementById('todayTasks');
+  const div = document.createElement('div');
+  div.className='task-item';
+  div.innerHTML=`<div class="task-check" onclick="toggleTask(this)"></div><span class="task-text">${t}</span><span class="task-time">Now</span>`;
+  list.appendChild(div);
+  toast('✅',`"${t}" added to today!`);
+}
+
+// ── SETTINGS ──
+function saveName() {
+  const name = document.getElementById('profileName').value;
+  document.querySelectorAll('[id^=sidebarName]').forEach(el => el.textContent=name);
+  document.querySelectorAll('.user-avatar').forEach(el => el.textContent=name[0]?.toUpperCase()||'A');
+  setGreeting();
+  toast('✅','Profile saved!');
+}
+function setTheme(t, el) {
+  document.querySelectorAll('.theme-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  const themes = {
+    light: {'--bg':'#f0f2f7','--surface':'rgba(255,255,255,0.72)','--text':'#1a1d2e'},
+    dark: {'--bg':'#0f111a','--surface':'rgba(30,33,55,0.8)','--text':'#e8eaf2','--text2':'#9298b8','--border':'rgba(100,110,180,0.2)'},
+    lavender: {'--bg':'#ede9ff','--surface':'rgba(255,255,255,0.75)','--text':'#2a1f5e'}
+  };
+  const vars = themes[t];
+  for(const k in vars) document.documentElement.style.setProperty(k,vars[k]);
+  toast('🎨',`Theme changed to ${t}!`);
+}
+
+// ── INIT ──
+setTimeout(() => { document.getElementById('focusTimer').textContent='25:00'; }, 100);
+</script>
+</body>
+</html>
